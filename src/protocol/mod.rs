@@ -1,9 +1,12 @@
 mod codec;
 mod varint;
+mod packet_reader;
 
 use core::fmt;
 
 pub use codec::inspect_packet;
+pub use varint::{read_string, read_ushort, read_varint};
+pub use packet_reader::PacketReader;
 
 pub enum Direction {
     ServerToClient,

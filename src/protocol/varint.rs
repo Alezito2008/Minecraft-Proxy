@@ -57,6 +57,14 @@ pub fn write_string(text: &str, buf: &mut Vec<u8>) {
     buf.extend_from_slice(text.as_bytes());
 }
 
+pub fn read_ushort(buf: &[u8]) -> Option<(u16, usize)> {
+    if buf.len() < 2 {
+        return None;
+    }
+    let n = u16::from_be_bytes([buf[0], buf[1]]);
+    Some((n, 2))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::protocol::varint::{read_string, read_varint, write_string, write_varint};
