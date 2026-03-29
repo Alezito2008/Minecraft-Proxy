@@ -2,37 +2,14 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, AsyncRead, AsyncWrite};
 use tokio::net::{TcpListener, TcpStream};
 
 mod utils;
+mod protocol;
+
+use protocol::{Direction, FilterResult, inspect_packet};
 
 const PROXY_PORT: i32 = 1243;
 const REMOTE_PORT: &str = "127.0.0.1:25565";
 
-enum Directions {
-    ServerToClient,
-    ClientToServer
-}
-
-enum FilterResult {
-    Send(Vec<u8>),
-    Cancel,
-    Incomplete
-}
-
-fn inspect_packet(buffer: &mut Vec<u8>, direction: &Directions) -> FilterResult {
-    let (size, len_size) = match utils::read_varint(&buffer) {
-        Some(v) => v,
-        None => return FilterResult::Incomplete
-    };
-
-    let total_size = len_size + size as usize;
-    if buffer.len() < total_size {
-        return FilterResult::Incomplete
-    }
-
-    let packet = buffer.drain(..total_size).collect::<Vec<u8>>();
-    FilterResult::Send(packet)
-}
-
-async fn forward<R, W>(mut from: R, mut to: W, direction: Directions)
+async fn forward<R, W>(mut from: R, mut to: W, direction: Direction)
 where
     R: AsyncRead + Unpin,
     W: AsyncWrite + Unpin,
@@ -75,8 +52,8 @@ async fn handle_connection(client: TcpStream) {
     let (s1, s2) = server.into_split();
 
     tokio::join!(
-        forward(c1, s2, Directions::ClientToServer),
-        forward(s1, c2, Directions::ServerToClient)
+        forward(c1, s2, Direction::ClientToServer),
+        forward(s1, c2, Direction::ServerToClient)
     );
 }
 
