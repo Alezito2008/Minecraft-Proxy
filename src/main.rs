@@ -1,58 +1,38 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt, AsyncRead, AsyncWrite};
 use tokio::net::{TcpListener, TcpStream};
 
+mod utils;
+
 const PROXY_PORT: i32 = 1243;
 const REMOTE_PORT: &str = "127.0.0.1:25565";
 
-fn read_varint(buf: &[u8]) -> Option<(i32, usize)> {
-    let mut num = 0;
-    let mut shift = 0;
-
-    for (i, byte) in buf.iter().enumerate() {
-        // leer últimos 7 bits
-        let val = (byte & 0b01111111) as i32;
-        num |= val << shift;
-
-        // si el primer bit es 0, es el ultimo byte
-        if byte & 0b10000000 == 0 {
-            return Some((num, i + 1));
-        }
-
-        shift += 7;
-        if shift >= 32 {
-            return None;
-        }
-    }
-
-    None
+enum Directions {
+    ServerToClient,
+    ClientToServer
 }
 
-fn inspect_packet(buffer: &mut Vec<u8>) {
-    loop {
-        let (length, len_size) = match read_varint(&buffer) {
-            Some(v) => v,
-            None => break,
-        };
-
-        if buffer.len() < len_size + length as usize {
-            break;
-        }
-
-        let packet = &buffer[len_size..len_size + length as usize];
-
-        // leer packet id
-        if let Some((packet_id, id_size)) = read_varint(packet) {
-            println!("Packet ID: {}", packet_id);
-
-            let data = &packet[id_size..];
-            println!("Data (hex): {:02X?}", data);
-        }
-
-        buffer.drain(0..len_size + length as usize);
-    }
+enum FilterResult {
+    Send(Vec<u8>),
+    Cancel,
+    Incomplete
 }
 
-async fn forward<R, W>(mut from: R, mut to: W)
+fn inspect_packet(buffer: &mut Vec<u8>, direction: &Directions) -> FilterResult {
+    let (size, len_size) = match utils::read_varint(&buffer) {
+        Some(v) => v,
+        None => return FilterResult::Incomplete
+    };
+
+    let total_size = len_size + size as usize;
+    if buffer.len() < total_size {
+        return FilterResult::Incomplete
+    }
+
+    let packet = buffer.drain(..total_size).collect::<Vec<u8>>();
+    FilterResult::Send(packet)
+}
+
+async fn forward<R, W>(mut from: R, mut to: W, direction: Directions)
 where
     R: AsyncRead + Unpin,
     W: AsyncWrite + Unpin,
@@ -61,17 +41,23 @@ where
     let mut buffer = Vec::new();
 
     loop {
-        let n = from.read(&mut temp).await.unwrap();
-        if n == 0 {
-            break;
-        }
-
+        let n = match from.read(&mut temp).await {
+            Ok(0) => break,
+            Ok(n) => n,
+            Err(_) => break
+        };
         buffer.extend_from_slice(&temp[..n]);
 
-        inspect_packet(&mut buffer);
-
-        if to.write_all(&temp[..n]).await.is_err() {
-            break;
+        loop {
+            match inspect_packet(&mut buffer, &direction) {
+                FilterResult::Send(packet) => {
+                    if to.write_all(&packet).await.is_err() {
+                        return;
+                    }
+                },
+                FilterResult::Cancel => continue,
+                FilterResult::Incomplete => break
+            }
         }
     }
 }
@@ -89,8 +75,8 @@ async fn handle_connection(client: TcpStream) {
     let (s1, s2) = server.into_split();
 
     tokio::join!(
-        forward(c1, s2),
-        forward(s1, c2)
+        forward(c1, s2, Directions::ClientToServer),
+        forward(s1, c2, Directions::ServerToClient)
     );
 }
 
