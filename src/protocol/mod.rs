@@ -8,6 +8,7 @@ use core::fmt;
 pub use codec::inspect_packet;
 pub use varint::{read_string, read_ushort, read_varint};
 pub use packet_reader::PacketReader;
+pub use packets::ConnectionState;
 
 use crate::protocol::varint::{write_string, write_ushort, write_varint};
 

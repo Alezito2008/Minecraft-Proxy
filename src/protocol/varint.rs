@@ -22,7 +22,7 @@ pub fn read_varint(buf: &[u8]) -> Option<(i32, usize)> {
     None
 }
 
-pub fn write_varint(mut value: i32, buf: &mut Vec<u8>) {
+pub fn write_varint(value: i32, buf: &mut Vec<u8>) {
     let mut u_value = value as u32;
 
     loop {

@@ -6,6 +6,7 @@ mod play;
 pub use handshaking::*;
 use crate::protocol::PacketReader;
 
+#[derive(Debug, Clone, Copy)]
 pub enum ConnectionState {
     Handshaking,
     Status,

@@ -1,8 +1,12 @@
-use crate::protocol::{Direction, FilterResult, PacketReader};
+use crate::protocol::{ConnectionState, Direction, FilterResult, PacketReader};
 use crate::protocol::packets::{MinecraftPacket, Packet, Handshake};
 use crate::protocol::{read_varint};
 
-pub fn inspect_packet(buffer: &mut Vec<u8>, dir: &Direction) -> FilterResult {
+pub fn inspect_packet(
+    buffer: &mut Vec<u8>,
+    dir: &Direction,
+    state: &mut ConnectionState
+) -> FilterResult {
     // Leer largo total del paquete
     let (total_length, len_size) = match read_varint(&buffer) {
         Some(v) => v,
@@ -25,12 +29,16 @@ pub fn inspect_packet(buffer: &mut Vec<u8>, dir: &Direction) -> FilterResult {
         data: raw_packet[len_size + id_size..].to_vec(),
     };
 
-    let mut packet_reader = PacketReader::new(&packet.data);
+    let mut reader = PacketReader::new(&packet.data);
 
-    if packet.id == 0x00 && matches!(dir, Direction::ClientToServer) {
-        if let Some(handshake) = Handshake::decode(&mut packet_reader) {
-            println!("Host: {}, Protocol: {}, Port: {}", handshake.server_address, handshake.protocol_version, handshake.server_port);
+    match (*state, packet.id, dir) {
+        (ConnectionState::Handshaking, Handshake::ID, Direction::ClientToServer) => {
+            if let Some(handshake) = Handshake::decode(&mut reader) {
+                println!("Host: {}, Protocol: {}, Port: {}, Next: {:?}", handshake.server_address, handshake.protocol_version, handshake.server_port, handshake.next_state);
+                *state = handshake.next_state;
+            }
         }
+        _ => {}
     }
 
     FilterResult::Send(raw_packet)
