@@ -1,5 +1,5 @@
 use crate::protocol::{ConnectionState, Direction, FilterResult, PacketReader};
-use crate::protocol::packets::{MinecraftPacket, Packet, Handshake};
+use crate::protocol::packets::*;
 use crate::protocol::{read_varint};
 
 pub fn inspect_packet(
@@ -31,13 +31,9 @@ pub fn inspect_packet(
 
     let mut reader = PacketReader::new(&packet.data);
 
-    match (*state, packet.id, dir) {
-        (ConnectionState::Handshaking, Handshake::ID, Direction::ClientToServer) => {
-            if let Some(handshake) = Handshake::decode(&mut reader) {
-                println!("Host: {}, Protocol: {}, Port: {}, Next: {:?}", handshake.server_address, handshake.protocol_version, handshake.server_port, handshake.next_state);
-                *state = handshake.next_state;
-            }
-        }
+    match *state {
+        ConnectionState::Handshaking    => HandshakeHandler::handle(&mut reader, dir, packet.id, state),
+        ConnectionState::Status         => StatusHandler::handle(&mut reader, dir, packet.id, state),
         _ => {}
     }
 

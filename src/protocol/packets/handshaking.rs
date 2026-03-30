@@ -1,6 +1,27 @@
-// https://minecraft.wiki/w/Java_Edition_protocol/Packets#Handshaking
 use crate::protocol::*;
 use crate::protocol::packets::*;
+
+// https://minecraft.wiki/w/Java_Edition_protocol/Packets#Handshaking
+// https://minecraft.wiki/w/Java_Edition_protocol/Server_List_Ping
+pub struct HandshakeHandler;
+impl PacketHandler for HandshakeHandler {
+    fn handle(
+        reader: &mut PacketReader,
+        dir: &Direction,
+        id: i32,
+        state: &mut ConnectionState
+    ) {
+        match (dir, id) {
+            (Direction::ClientToServer, Handshake::ID) => {
+                if let Some(handshake) = Handshake::decode(reader) {
+                    println!("Handshake: Host: {}, Protocol: {}, Port: {}, Next: {:?}", handshake.server_address, handshake.protocol_version, handshake.server_port, handshake.next_state);
+                    *state = handshake.next_state;
+                }
+            },
+            _ => {}
+        }
+    }
+}
 
 pub struct Handshake {
     pub protocol_version: i32,
@@ -13,7 +34,7 @@ impl MinecraftPacket for Handshake {
     const ID: i32 = 0x0;
 
     fn decode(reader: &mut PacketReader) -> Option<Self> where Self: Sized {
-        Some(Handshake {
+        Some(Self {
             protocol_version: reader.read_varint()?,
             server_address: reader.read_string()?,
             server_port: reader.read_ushort()?,

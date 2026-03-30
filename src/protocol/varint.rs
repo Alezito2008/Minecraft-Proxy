@@ -22,8 +22,47 @@ pub fn read_varint(buf: &[u8]) -> Option<(i32, usize)> {
     None
 }
 
+pub fn read_varlong(buf: &[u8]) -> Option<(i64, usize)> {
+    let mut num: i64 = 0;
+    let mut shift = 0;
+
+    for (i, byte) in buf.iter().enumerate() {
+        // leer últimos 7 bits
+        let val = (byte & 0b01111111) as i64;
+        num |= val << shift;
+
+        // si el primer bit es 0, es el ultimo byte
+        if byte & 0b10000000 == 0 {
+            return Some((num, i + 1));
+        }
+
+        shift += 7;
+        if shift >= 64 {
+            return None;
+        }
+    }
+
+    None
+}
+
 pub fn write_varint(value: i32, buf: &mut Vec<u8>) {
     let mut u_value = value as u32;
+
+    loop {
+        let mut byte = (u_value & 0b01111111) as u8;
+        u_value >>= 7;
+        if u_value != 0 {
+            byte |= 0b10000000;
+        }
+        buf.push(byte);
+        if u_value == 0 {
+            break;
+        }
+    }
+}
+
+pub fn write_varlong(value: i64, buf: &mut Vec<u8>) {
+    let mut u_value = value as u64;
 
     loop {
         let mut byte = (u_value & 0b01111111) as u8;
@@ -71,7 +110,7 @@ pub fn write_ushort(value: u16, buf: &mut Vec<u8>) {
 
 #[cfg(test)]
 mod tests {
-    use crate::protocol::varint::{read_string, read_varint, write_string, write_varint};
+    use crate::protocol::varint::{read_string, read_varint, read_varlong, write_string, write_varint, write_varlong};
 
     #[test]
     fn test_read_single_byte() {
@@ -101,6 +140,15 @@ mod tests {
         let mut buf: Vec<u8> = Vec::new();
         write_varint(2097151, &mut buf);
         assert_eq!(buf, vec![0xff, 0xff, 0x7f])
+    }
+
+    #[test]
+    fn read_write_varlong() {
+        let mut buf: Vec<u8> = Vec::new();
+        write_varlong(12345678910, &mut buf);
+        let (val, size) = read_varlong(&buf).unwrap();
+        assert_eq!(val, 12345678910);
+        assert_eq!(size, 5)
     }
 
     #[test]

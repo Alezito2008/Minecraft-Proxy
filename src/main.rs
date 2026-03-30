@@ -34,6 +34,7 @@ where
         };
         buffer.extend_from_slice(&temp[..n]);
 
+        // Loop por si se envía más de un packet a la vez
         loop {
             let result = {
                 let mut current_state = state.lock().unwrap();

@@ -1,4 +1,4 @@
-use crate::protocol::{read_string, read_ushort, read_varint};
+use crate::protocol::{read_string, read_ushort, read_varint, read_varlong};
 
 pub struct PacketReader<'a> {
     data: &'a Vec<u8>,
@@ -15,6 +15,12 @@ impl<'a> PacketReader<'a> {
 
     pub fn read_varint(&mut self) -> Option<i32> {
         let (value, size) = read_varint(&self.data[self.offset..])?;
+        self.offset += size;
+        Some(value)
+    }
+
+    pub fn read_varlong(&mut self) -> Option<i64> {
+        let (value, size) = read_varlong(&self.data[self.offset..])?;
         self.offset += size;
         Some(value)
     }
