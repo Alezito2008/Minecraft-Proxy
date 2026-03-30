@@ -1,33 +1,35 @@
-use crate::protocol::{Direction, PacketReader};
+use crate::protocol::{ConnectionState, Direction, PacketReader};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
 use crate::protocol::varint::*;
 
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Status
+// https://minecraft.wiki/w/Java_Edition_protocol/Server_List_Ping
 pub struct StatusHandler;
 impl PacketHandler for StatusHandler {
-    fn handle(
-        reader: &mut PacketReader,
-        dir: &Direction,
-        id: i32,
-        _state: &mut super::ConnectionState
-    ) {
-        match (dir, id) {
-            (Direction::ClientToServer, StatusRequest::ID) => {
+    fn handle_c2s(reader: &mut PacketReader, id: i32, _state: &mut ConnectionState) {
+        match id {
+            StatusRequest::ID => {
                 println!("Server Status Requested");
             }
-            (Direction::ServerToClient, StatusResponse::ID) => {
-                if let Some(status_response) = StatusResponse::decode(reader) {
-                    println!("Status Response: {}", status_response.json_response);
-                }
-            }
-            (Direction::ClientToServer, PingPacket::ID) => {
+            PingPacket::ID => {
                 if let Some(ping_request) = PingPacket::decode(reader) {
                     println!("Sent ping request with payload: {}", ping_request.payload);
                 }
             }
-            (Direction::ServerToClient, PingPacket::ID) => {
+            _ => {}
+        }
+    }
+
+    fn handle_s2c(reader: &mut PacketReader, id: i32, _state: &mut ConnectionState) {
+        match id {
+            StatusResponse::ID => {
+                if let Some(status_response) = StatusResponse::decode(reader) {
+                    println!("Status Response: {}", status_response.json_response);
+                }
+            }
+            PingPacket::ID => {
                 if let Some(ping_request) = PingPacket::decode(reader) {
-                    println!("Received ping response with payload: {}", ping_request.payload);
+                    println!("Received pong response with payload: {}", ping_request.payload);
                 }
             }
             _ => {}

@@ -31,10 +31,21 @@ pub fn inspect_packet(
 
     let mut reader = PacketReader::new(&packet.data);
 
-    match *state {
-        ConnectionState::Handshaking    => HandshakeHandler::handle(&mut reader, dir, packet.id, state),
-        ConnectionState::Status         => StatusHandler::handle(&mut reader, dir, packet.id, state),
-        _ => {}
+    match dir {
+        Direction::ClientToServer => match *state {
+            ConnectionState::Handshaking    => HandshakeHandler::handle_c2s(&mut reader, packet.id, state),
+            ConnectionState::Status         => StatusHandler::handle_c2s(&mut reader, packet.id, state),
+            ConnectionState::Login          => LoginHandler::handle_c2s(&mut reader, packet.id, state),
+            ConnectionState::Play           => PlayHandler::handle_c2s(&mut reader, packet.id, state),
+            _ => {}
+        }
+        Direction::ServerToClient => match *state {
+            ConnectionState::Handshaking    => HandshakeHandler::handle_s2c(&mut reader, packet.id, state),
+            ConnectionState::Status         => StatusHandler::handle_s2c(&mut reader, packet.id, state),
+            ConnectionState::Login          => LoginHandler::handle_s2c(&mut reader, packet.id, state),
+            ConnectionState::Play           => PlayHandler::handle_s2c(&mut reader, packet.id, state),
+            _ => {}
+        }
     }
 
     FilterResult::Send(raw_packet)

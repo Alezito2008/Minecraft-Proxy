@@ -34,5 +34,6 @@ pub struct Packet {
 }
 
 pub trait PacketHandler {
-    fn handle(reader: &mut PacketReader, dir: &Direction, id: i32, state: &mut ConnectionState);
+    fn handle_c2s(reader: &mut PacketReader, id: i32, state: &mut ConnectionState) {}
+    fn handle_s2c(reader: &mut PacketReader, id: i32, state: &mut ConnectionState) {}
 }
