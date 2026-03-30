@@ -1,12 +1,15 @@
 mod codec;
 mod varint;
 mod packet_reader;
+mod packets;
 
 use core::fmt;
 
 pub use codec::inspect_packet;
 pub use varint::{read_string, read_ushort, read_varint};
 pub use packet_reader::PacketReader;
+
+use crate::protocol::varint::{write_string, write_ushort, write_varint};
 
 pub enum Direction {
     ServerToClient,
@@ -20,11 +23,6 @@ impl fmt::Display for Direction {
             Self::ServerToClient => "Server -> Client"
         })
     }
-}
-
-pub struct Packet {
-    pub id: i32,
-    pub data: Vec<u8>,
 }
 
 pub enum FilterResult {

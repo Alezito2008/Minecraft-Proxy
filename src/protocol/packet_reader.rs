@@ -2,7 +2,7 @@ use crate::protocol::{read_string, read_ushort, read_varint};
 
 pub struct PacketReader<'a> {
     data: &'a Vec<u8>,
-    offset: usize
+    offset: usize,
 }
 
 impl<'a> PacketReader<'a> {

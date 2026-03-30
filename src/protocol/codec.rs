@@ -1,5 +1,6 @@
-use crate::protocol::{Direction, FilterResult, Packet, PacketReader};
-use crate::protocol::{read_string, read_ushort, read_varint};
+use crate::protocol::{Direction, FilterResult, PacketReader};
+use crate::protocol::packets::{MinecraftPacket, Packet, Handshake};
+use crate::protocol::{read_varint};
 
 pub fn inspect_packet(buffer: &mut Vec<u8>, dir: &Direction) -> FilterResult {
     // Leer largo total del paquete
@@ -21,20 +22,15 @@ pub fn inspect_packet(buffer: &mut Vec<u8>, dir: &Direction) -> FilterResult {
 
     let packet = Packet {
         id: packet_id,
-        data: raw_packet[len_size + id_size..].to_vec()
+        data: raw_packet[len_size + id_size..].to_vec(),
     };
 
-    if packet_id == 0x00 && matches!(dir, Direction::ClientToServer) {
-        let mut packet_reader = PacketReader::new(&packet.data);
-        let _ = (|| -> Option<()> {
-            let protocol_version =  packet_reader.read_varint()?;
-            let server_addr = packet_reader.read_string()?;
-            let server_port = packet_reader.read_ushort()?;
-            let intent = packet_reader.read_varint()?;
+    let mut packet_reader = PacketReader::new(&packet.data);
 
-            println!("Protocol Version: {protocol_version} | Server: {server_addr} | Port: {server_port} | Intent: {intent}");
-            return Some(());
-        })();
+    if packet.id == 0x00 && matches!(dir, Direction::ClientToServer) {
+        if let Some(handshake) = Handshake::decode(&mut packet_reader) {
+            println!("Host: {}, Protocol: {}, Port: {}", handshake.server_address, handshake.protocol_version, handshake.server_port);
+        }
     }
 
     FilterResult::Send(raw_packet)
