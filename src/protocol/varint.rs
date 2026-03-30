@@ -108,6 +108,19 @@ pub fn write_ushort(value: u16, buf: &mut Vec<u8>) {
     buf.extend_from_slice(&u16::to_be_bytes(value));
 }
 
+pub fn read_long(buf: &[u8]) -> Option<(i64, usize)> {
+    if buf.len() < 8 {
+        return None;
+    }
+    let bytes: [u8; 8] = buf[..8].try_into().unwrap();
+    let n = i64::from_be_bytes(bytes);
+    Some((n, 8))
+}
+
+pub fn write_long(value: i64, buf: &mut Vec<u8>) {
+    buf.extend_from_slice(&i64::to_be_bytes(value));
+}
+
 #[cfg(test)]
 mod tests {
     use crate::protocol::varint::{read_string, read_varint, read_varlong, write_string, write_varint, write_varlong};

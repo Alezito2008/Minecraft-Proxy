@@ -1,4 +1,6 @@
-use crate::protocol::{Direction, PacketReader, packets::{MinecraftPacket, PacketHandler}, varint::write_varlong};
+use crate::protocol::{Direction, PacketReader};
+use crate::protocol::packets::{MinecraftPacket, PacketHandler};
+use crate::protocol::varint::*;
 
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Status
 pub struct StatusHandler;
@@ -18,12 +20,12 @@ impl PacketHandler for StatusHandler {
                     println!("Status Response: {}", status_response.json_response);
                 }
             }
-            (Direction::ClientToServer, PingRequest::ID) => {
+            (Direction::ClientToServer, PingPacket::ID) => {
                 if let Some(ping_request) = PingPacket::decode(reader) {
                     println!("Sent ping request with payload: {}", ping_request.payload);
                 }
             }
-            (Direction::ServerToClient, PingRequest::ID) => {
+            (Direction::ServerToClient, PingPacket::ID) => {
                 if let Some(ping_request) = PingPacket::decode(reader) {
                     println!("Received ping response with payload: {}", ping_request.payload);
                 }
@@ -62,7 +64,7 @@ impl MinecraftPacket for PingPacket {
 
     fn decode(reader: &mut crate::protocol::PacketReader) -> Option<Self> where Self: Sized {
         Some(Self {
-            payload: reader.read_varlong()? // TODO: Cambiar a read_long
+            payload: reader.read_long()?
         })
     }
 
@@ -70,6 +72,3 @@ impl MinecraftPacket for PingPacket {
         write_varlong(self.payload, buf);
     }
 }
-
-pub type PingRequest = PingPacket;
-pub type PingResponse = PingPacket;

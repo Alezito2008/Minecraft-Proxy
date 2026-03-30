@@ -5,8 +5,8 @@ mod packets;
 
 use core::fmt;
 
+pub use varint::*;
 pub use codec::inspect_packet;
-pub use varint::{read_string, read_ushort, read_varint, read_varlong};
 pub use packet_reader::PacketReader;
 pub use packets::ConnectionState;
 
