@@ -12,6 +12,11 @@ pub use play::PlayHandler;
 
 use crate::protocol::PacketReader;
 
+pub struct Session {
+    pub state: ConnectionState,
+    pub compression_threshold: i32,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum ConnectionState {
     Handshaking,

@@ -8,7 +8,7 @@ mod protocol;
 
 use protocol::{Direction, FilterResult, inspect_packet};
 
-use crate::protocol::ConnectionState;
+use crate::protocol::Session;
 
 const PROXY_PORT: i32 = 1243;
 const REMOTE_PORT: &str = "127.0.0.1:25565";
@@ -17,7 +17,7 @@ async fn forward<R, W>(
     mut from: R,
     mut to: W,
     direction: Direction,
-    state: Arc<Mutex<ConnectionState>>
+    session: Arc<Mutex<Session>>
 )
 where
     R: AsyncRead + Unpin,
@@ -37,8 +37,8 @@ where
         // Loop por si se envía más de un packet a la vez
         loop {
             let result = {
-                let mut current_state = state.lock().unwrap();
-                inspect_packet(&mut buffer, &direction, &mut current_state)
+                let mut current_session = session.lock().unwrap();
+                inspect_packet(&mut buffer, &direction, &mut current_session)
             };
 
             match result {
@@ -63,17 +63,22 @@ async fn handle_connection(client: TcpStream) {
         }
     };
 
-    let state = Arc::new(Mutex::new(ConnectionState::Handshaking));
+    let session = Arc::new(Mutex::new(
+        Session {
+            state: protocol::ConnectionState::Handshaking,
+            compression_threshold: -1
+        }
+    ));
 
     let (c_read, c_write) = client.into_split();
     let (s_read, s_write) = server.into_split();
 
-    let state_c2s = Arc::clone(&state);
-    let state_s2c = Arc::clone(&state);
+    let session_c2s = Arc::clone(&session);
+    let session_s2c = Arc::clone(&session);
 
     tokio::join!(
-        forward(c_read, s_write, Direction::ClientToServer, state_c2s),
-        forward(s_read, c_write, Direction::ServerToClient, state_s2c),
+        forward(c_read, s_write, Direction::ClientToServer, session_c2s),
+        forward(s_read, c_write, Direction::ServerToClient, session_s2c),
     );
 }
 

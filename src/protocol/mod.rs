@@ -8,7 +8,7 @@ use core::fmt;
 pub use varint::*;
 pub use codec::inspect_packet;
 pub use packet_reader::PacketReader;
-pub use packets::ConnectionState;
+pub use packets::{ConnectionState, Session};
 
 pub enum Direction {
     ServerToClient,
