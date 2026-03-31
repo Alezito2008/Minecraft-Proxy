@@ -42,4 +42,10 @@ impl<'a> PacketReader<'a> {
         self.offset += size;
         Some(value)
     }
+
+    pub fn read_uuid(&mut self) -> Option<u128> {
+        let (value, size) = read_uuid(&self.data[self.offset..])?;
+        self.offset += size;
+        Some(value)
+    }
 }

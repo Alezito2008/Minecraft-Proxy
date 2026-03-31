@@ -121,9 +121,27 @@ pub fn write_long(value: i64, buf: &mut Vec<u8>) {
     buf.extend_from_slice(&i64::to_be_bytes(value));
 }
 
+pub fn read_uuid(buf: &[u8]) -> Option<(u128, usize)> {
+    if buf.len() < 16 {
+        return None;
+    }
+
+    let (first, _) = read_long(&buf[..8])?;
+    let (second, _) = read_long(&buf[8..16])?;
+
+    // castear primero a u64 par evitar problemas con signos
+    let uuid = (first as u64 as u128) << 64 | (second as u64 as u128);
+    Some((uuid, 16))
+}
+
+pub fn write_uuid(value: u128, buf: &mut Vec<u8>) {
+    let bytes = u128::to_be_bytes(value);
+    buf.extend_from_slice(&bytes);
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::protocol::varint::{read_string, read_varint, read_varlong, write_string, write_varint, write_varlong};
+    use crate::protocol::{read_uuid, varint::{read_string, read_varint, read_varlong, write_string, write_varint, write_varlong}, write_uuid};
 
     #[test]
     fn test_read_single_byte() {
@@ -162,6 +180,16 @@ mod tests {
         let (val, size) = read_varlong(&buf).unwrap();
         assert_eq!(val, 12345678910);
         assert_eq!(size, 5)
+    }
+
+    #[test]
+    fn read_write_uuid() {
+        let mut buf: Vec<u8> = Vec::new();
+        let sample: u128 = 241955219455879047950202949268709829445;
+        write_uuid(sample, &mut buf);
+        let (val,size) = read_uuid(&buf).unwrap();
+        assert_eq!(val, sample);
+        assert_eq!(size, 16);
     }
 
     #[test]
