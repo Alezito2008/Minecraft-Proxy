@@ -1,11 +1,11 @@
-use crate::protocol::{PacketReader, ConnectionState};
+use crate::protocol::{ConnectionState, PacketReader, Session};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
 use self::packets::*;
 
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Login
 pub struct LoginHandler;
 impl PacketHandler for LoginHandler {
-    fn handle_c2s(reader: &mut PacketReader, id: i32, state: &mut ConnectionState) {
+    fn handle_c2s(reader: &mut PacketReader, id: i32, session: &mut Session) {
         match id {
             LoginStart::ID => {
                 if let Some(login_start) = LoginStart::decode(reader) {
@@ -17,13 +17,13 @@ impl PacketHandler for LoginHandler {
             },
             LoginAcknowledged::ID => {
                 println!("Login acknowledged");
-                *state = ConnectionState::Configuration;
+                session.state = ConnectionState::Configuration;
             }
             _ => {}
         }
     }
 
-    fn handle_s2c(reader: &mut PacketReader, id: i32, _state: &mut ConnectionState) {
+    fn handle_s2c(reader: &mut PacketReader, id: i32, session: &mut Session) {
         match id {
             EncryptionRequest::ID => {
                 println!("Received encryption request packet");
@@ -31,6 +31,7 @@ impl PacketHandler for LoginHandler {
             SetCompression::ID => {
                 if let Some(set_compression) = SetCompression::decode(reader) {
                     println!("Set compression threshold: {}", set_compression.threshold);
+                    session.compression_threshold = set_compression.threshold;
                 }
             }
             LoginSuccess::ID => {

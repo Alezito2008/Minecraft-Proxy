@@ -1,4 +1,4 @@
-use crate::protocol::{PacketReader, ConnectionState};
+use crate::protocol::{PacketReader, Session};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
 use self::packets::*;
 
@@ -6,7 +6,7 @@ use self::packets::*;
 // https://minecraft.wiki/w/Java_Edition_protocol/Server_List_Ping
 pub struct StatusHandler;
 impl PacketHandler for StatusHandler {
-    fn handle_c2s(reader: &mut PacketReader, id: i32, _state: &mut ConnectionState) {
+    fn handle_c2s(reader: &mut PacketReader, id: i32, _session: &mut Session) {
         match id {
             StatusRequest::ID => {
                 println!("Server Status Requested");
@@ -20,7 +20,7 @@ impl PacketHandler for StatusHandler {
         }
     }
 
-    fn handle_s2c(reader: &mut PacketReader, id: i32, _state: &mut ConnectionState) {
+    fn handle_s2c(reader: &mut PacketReader, id: i32, _session: &mut Session) {
         match id {
             StatusResponse::ID => {
                 if let Some(status_response) = StatusResponse::decode(reader) {

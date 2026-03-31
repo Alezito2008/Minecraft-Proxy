@@ -43,7 +43,7 @@ impl From<ConnectionState> for i32 {
     fn from(value: ConnectionState) -> Self {
         match value {
             ConnectionState::Status => 1,
-            ConnectionState::Login => 2,
+            ConnectionState::Login  => 2,
             ConnectionState::Transfer => 3,
             _ => -1
         }
@@ -63,6 +63,6 @@ pub struct Packet {
 }
 
 pub trait PacketHandler {
-    fn handle_c2s(_reader: &mut PacketReader, _id: i32, _state: &mut ConnectionState) {}
-    fn handle_s2c(_reader: &mut PacketReader, _id: i32, _state: &mut ConnectionState) {}
+    fn handle_c2s(_reader: &mut PacketReader, _id: i32, _session: &mut Session) {}
+    fn handle_s2c(_reader: &mut PacketReader, _id: i32, _session: &mut Session) {}
 }

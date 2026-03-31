@@ -1,4 +1,4 @@
-use crate::protocol::{PacketReader, ConnectionState};
+use crate::protocol::{ConnectionState, PacketReader, Session};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
 use self::packets::*;
 
@@ -6,17 +6,17 @@ use self::packets::*;
 pub struct ConfigurationHandler;
 
 impl PacketHandler for ConfigurationHandler {
-    fn handle_c2s(_reader: &mut PacketReader, id: i32, state: &mut ConnectionState) {
+    fn handle_c2s(_reader: &mut PacketReader, id: i32, session: &mut Session) {
         match id {
             AcknowledgeFinishConfiguration::ID => {
                 println!("Acknowledge finish configuration");
-                *state = ConnectionState::Play;
+                session.state = ConnectionState::Play;
             }
             _ => {}
         }
     }
 
-    fn handle_s2c(_reader: &mut PacketReader, id: i32, _state: &mut ConnectionState) {
+    fn handle_s2c(_reader: &mut PacketReader, id: i32, _session: &mut Session) {
         match id {
             FinishConfiguration::ID => {
                 println!("Finish configuration");

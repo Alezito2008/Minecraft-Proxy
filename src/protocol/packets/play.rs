@@ -1,11 +1,11 @@
-use crate::protocol::{PacketReader, ConnectionState};
+use crate::protocol::{PacketReader, Session};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
 use self::packets::*;
 
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Play
 pub struct PlayHandler;
 impl PacketHandler for PlayHandler {
-    fn handle_c2s(reader: &mut PacketReader, id: i32, _state: &mut ConnectionState) {
+    fn handle_c2s(reader: &mut PacketReader, id: i32, _session: &mut Session) {
         match id {
             ChatCommand::ID => {
                 if let Some(chat_command) = ChatCommand::decode(reader) {
@@ -16,9 +16,7 @@ impl PacketHandler for PlayHandler {
         }
     }
 
-    fn handle_s2c(_reader: &mut PacketReader, _id: i32, _state: &mut ConnectionState) {
-        
-    }
+    fn handle_s2c(_reader: &mut PacketReader, _id: i32, _session: &mut Session) {}
 }
 
 pub mod packets {

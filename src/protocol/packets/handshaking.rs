@@ -1,4 +1,4 @@
-use crate::protocol::{PacketReader, ConnectionState};
+use crate::protocol::{ConnectionState, PacketReader, Session};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
 use self::packets::*;
 
@@ -8,13 +8,13 @@ impl PacketHandler for HandshakeHandler {
     fn handle_c2s(
         reader: &mut PacketReader,
         id: i32,
-        state: &mut ConnectionState
+        session: &mut Session
     ) {
         match id {
             Handshake::ID => {
                 if let Some(handshake) = Handshake::decode(reader) {
                     println!("Handshake: Host: {}, Protocol: {}, Port: {}, Intent: {:?}", handshake.server_address, handshake.protocol_version, handshake.server_port, handshake.next_state);
-                    *state = handshake.next_state;
+                    session.state = handshake.next_state;
                 }
             },
             _ => {}
