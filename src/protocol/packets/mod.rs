@@ -1,14 +1,16 @@
 mod handshaking;
 mod login;
 mod status;
+mod configuration;
 mod play;
 
-pub use handshaking::*;
-pub use status::*;
-pub use login::*;
-pub use play::*;
+pub use handshaking::HandshakeHandler;
+pub use status::StatusHandler;
+pub use login::LoginHandler;
+pub use configuration::ConfigurationHandler;
+pub use play::PlayHandler;
 
-use crate::protocol::{Direction, PacketReader};
+use crate::protocol::PacketReader;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ConnectionState {
@@ -19,6 +21,28 @@ pub enum ConnectionState {
     Configuration,
     Play,
     Unknown,
+}
+
+impl From<i32> for ConnectionState {
+    fn from(value: i32) -> Self {
+        match value {
+            1 => Self::Status,
+            2 => Self::Login,
+            3 => Self::Transfer,
+            _ => Self::Unknown
+        }
+    }
+}
+
+impl From<ConnectionState> for i32 {
+    fn from(value: ConnectionState) -> Self {
+        match value {
+            ConnectionState::Status => 1,
+            ConnectionState::Login => 2,
+            ConnectionState::Transfer => 3,
+            _ => -1
+        }
+    }
 }
 
 #[allow(unused)]
@@ -34,6 +58,6 @@ pub struct Packet {
 }
 
 pub trait PacketHandler {
-    fn handle_c2s(reader: &mut PacketReader, id: i32, state: &mut ConnectionState) {}
-    fn handle_s2c(reader: &mut PacketReader, id: i32, state: &mut ConnectionState) {}
+    fn handle_c2s(_reader: &mut PacketReader, _id: i32, _state: &mut ConnectionState) {}
+    fn handle_s2c(_reader: &mut PacketReader, _id: i32, _state: &mut ConnectionState) {}
 }

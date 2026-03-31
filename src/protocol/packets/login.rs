@@ -1,6 +1,6 @@
-use crate::protocol::{Direction, PacketReader, ConnectionState};
+use crate::protocol::{PacketReader, ConnectionState};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
-use crate::protocol::varint::*;
+use self::packets::*;
 
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Login
 pub struct LoginHandler;
@@ -14,12 +14,16 @@ impl PacketHandler for LoginHandler {
             },
             EncryptionResponse::ID => {
                 println!("Sent encryption response packet");
+            },
+            LoginAcknowledged::ID => {
+                println!("Login acknowledged");
+                *state = ConnectionState::Configuration;
             }
             _ => {}
         }
     }
 
-    fn handle_s2c(reader: &mut PacketReader, id: i32, state: &mut ConnectionState) {
+    fn handle_s2c(reader: &mut PacketReader, id: i32, _state: &mut ConnectionState) {
         match id {
             EncryptionRequest::ID => {
                 println!("Received encryption request packet");
@@ -29,58 +33,98 @@ impl PacketHandler for LoginHandler {
                     println!("Set compression threshold: {}", set_compression.threshold);
                 }
             }
+            LoginSuccess::ID => {
+                if let Some(login_success) = LoginSuccess::decode(reader) {
+                    println!("Login success: UUID: {}, Username: {}", login_success.uuid, login_success.username);
+                }
+            }
             _ => {}
         }
     }
 }
 
-pub struct LoginStart {
-    pub name: String,
-    pub uuid: u128,
-}
-
-impl MinecraftPacket for LoginStart {
-    const ID: i32 = 0x00;
-
-    fn decode(reader: &mut PacketReader) -> Option<Self> where Self: Sized {
-        Some(Self {
-            name: reader.read_string()?,
-            uuid: reader.read_uuid()?,
-        })
+mod packets {
+    use super::*;
+    use crate::protocol::varint::*;
+    
+    pub struct LoginStart {
+        pub name: String,
+        pub uuid: u128,
     }
 
-    fn encode(&self, buf: &mut Vec<u8>) {
-        write_string(&self.name, buf);
-        write_uuid(self.uuid, buf);
-    }
-}
+    impl MinecraftPacket for LoginStart {
+        const ID: i32 = 0x00;
 
-pub struct EncryptionRequest; // TODO
+        fn decode(reader: &mut PacketReader) -> Option<Self> where Self: Sized {
+            Some(Self {
+                name: reader.read_string()?,
+                uuid: reader.read_uuid()?,
+            })
+        }
 
-impl MinecraftPacket for EncryptionRequest {
-    const ID: i32 = 0x01;
-}
-
-pub struct EncryptionResponse; // TODO
-
-impl MinecraftPacket for EncryptionResponse {
-    const ID: i32 = 0x01;
-}
-
-pub struct SetCompression {
-    pub threshold: i32
-}
-
-impl MinecraftPacket for SetCompression {
-    const ID: i32 = 0x03;
-
-    fn decode(reader: &mut PacketReader) -> Option<Self> where Self: Sized {
-        Some(Self {
-            threshold: reader.read_varint()?,
-        })
+        fn encode(&self, buf: &mut Vec<u8>) {
+            write_string(&self.name, buf);
+            write_uuid(self.uuid, buf);
+        }
     }
 
-    fn encode(&self, buf: &mut Vec<u8>) {
-        write_varint(self.threshold, buf);
+    pub struct EncryptionRequest; // TODO
+
+    impl MinecraftPacket for EncryptionRequest {
+        const ID: i32 = 0x01;
+    }
+
+    pub struct EncryptionResponse; // TODO
+
+    impl MinecraftPacket for EncryptionResponse {
+        const ID: i32 = 0x01;
+    }
+
+    pub struct SetCompression {
+        pub threshold: i32
+    }
+
+    impl MinecraftPacket for SetCompression {
+        const ID: i32 = 0x03;
+
+        fn decode(reader: &mut PacketReader) -> Option<Self> where Self: Sized {
+            Some(Self {
+                threshold: reader.read_varint()?,
+            })
+        }
+
+        fn encode(&self, buf: &mut Vec<u8>) {
+            write_varint(self.threshold, buf);
+        }
+    }
+
+    pub struct LoginSuccess {
+        pub uuid: u128,
+        pub username: String,
+        // TODO properties
+    }
+
+    impl MinecraftPacket for LoginSuccess {
+        const ID: i32 = 0x02;
+
+        fn decode(reader: &mut PacketReader) -> Option<Self> where Self: Sized {
+            Some(Self {
+                uuid: reader.read_uuid()?,
+                username: reader.read_string()?,
+                // TODO properties
+            })
+        }
+
+        fn encode(&self, buf: &mut Vec<u8>) {
+            write_uuid(self.uuid, buf);
+            write_string(&self.username, buf);
+            // TODO properties
+        }
+    }
+
+    pub struct LoginAcknowledged;
+
+    impl MinecraftPacket for LoginAcknowledged {
+        const ID: i32 = 0x03;
     }
 }

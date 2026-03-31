@@ -10,8 +10,6 @@ pub use codec::inspect_packet;
 pub use packet_reader::PacketReader;
 pub use packets::ConnectionState;
 
-use crate::protocol::varint::{write_string, write_ushort, write_varint};
-
 pub enum Direction {
     ServerToClient,
     ClientToServer,

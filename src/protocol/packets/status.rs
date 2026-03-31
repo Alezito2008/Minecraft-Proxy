@@ -1,6 +1,6 @@
-use crate::protocol::{ConnectionState, Direction, PacketReader};
+use crate::protocol::{PacketReader, ConnectionState};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
-use crate::protocol::varint::*;
+use self::packets::*;
 
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Status
 // https://minecraft.wiki/w/Java_Edition_protocol/Server_List_Ping
@@ -37,40 +37,45 @@ impl PacketHandler for StatusHandler {
     }
 }
 
-pub struct StatusRequest;
+pub mod packets {
+    use super::*;
+    use crate::protocol::varint::*;
 
-impl MinecraftPacket for StatusRequest {
-    const ID: i32 = 0x00;
-}
+    pub struct StatusRequest;
 
-pub struct StatusResponse {
-    pub json_response: String
-}
-
-impl MinecraftPacket for StatusResponse {
-    const ID: i32 = 0x00;
-
-    fn decode(reader: &mut crate::protocol::PacketReader) -> Option<Self> where Self: Sized {
-        Some(Self {
-            json_response: reader.read_string()?
-        })
-    }
-}
-
-pub struct PingPacket {
-    pub payload: i64,
-}
-
-impl MinecraftPacket for PingPacket {
-    const ID: i32 = 0x01;
-
-    fn decode(reader: &mut crate::protocol::PacketReader) -> Option<Self> where Self: Sized {
-        Some(Self {
-            payload: reader.read_long()?
-        })
+    impl MinecraftPacket for StatusRequest {
+        const ID: i32 = 0x00;
     }
 
-    fn encode(&self, buf: &mut Vec<u8>) {
-        write_varlong(self.payload, buf);
+    pub struct StatusResponse {
+        pub json_response: String
+    }
+
+    impl MinecraftPacket for StatusResponse {
+        const ID: i32 = 0x00;
+
+        fn decode(reader: &mut crate::protocol::PacketReader) -> Option<Self> where Self: Sized {
+            Some(Self {
+                json_response: reader.read_string()?
+            })
+        }
+    }
+
+    pub struct PingPacket {
+        pub payload: i64,
+    }
+
+    impl MinecraftPacket for PingPacket {
+        const ID: i32 = 0x01;
+
+        fn decode(reader: &mut crate::protocol::PacketReader) -> Option<Self> where Self: Sized {
+            Some(Self {
+                payload: reader.read_long()?
+            })
+        }
+
+        fn encode(&self, buf: &mut Vec<u8>) {
+            write_varlong(self.payload, buf);
+        }
     }
 }

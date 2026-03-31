@@ -36,6 +36,7 @@ pub fn inspect_packet(
             ConnectionState::Handshaking    => HandshakeHandler::handle_c2s(&mut reader, packet.id, state),
             ConnectionState::Status         => StatusHandler::handle_c2s(&mut reader, packet.id, state),
             ConnectionState::Login          => LoginHandler::handle_c2s(&mut reader, packet.id, state),
+            ConnectionState::Configuration  => ConfigurationHandler::handle_c2s(&mut reader, packet.id, state),
             ConnectionState::Play           => PlayHandler::handle_c2s(&mut reader, packet.id, state),
             _ => {}
         }
@@ -43,6 +44,7 @@ pub fn inspect_packet(
             ConnectionState::Handshaking    => HandshakeHandler::handle_s2c(&mut reader, packet.id, state),
             ConnectionState::Status         => StatusHandler::handle_s2c(&mut reader, packet.id, state),
             ConnectionState::Login          => LoginHandler::handle_s2c(&mut reader, packet.id, state),
+            ConnectionState::Configuration  => ConfigurationHandler::handle_s2c(&mut reader, packet.id, state),
             ConnectionState::Play           => PlayHandler::handle_s2c(&mut reader, packet.id, state),
             _ => {}
         }
