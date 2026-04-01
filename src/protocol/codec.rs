@@ -5,6 +5,40 @@ use crate::protocol::{read_varint};
 use flate2::read::ZlibDecoder;
 use std::io::Read;
 
+pub fn deconstruct_packet(payload: &[u8], threshold: i32) -> Option<(i32, Vec<u8>)> {
+    let mut offset = 0;
+
+    if threshold >= 0 {
+        let (data_length, data_len_size) = read_varint(&payload[offset..])?;
+        offset += data_len_size;
+
+        if data_length == 0 {
+            // data_length es 0 cuando no está comprimido
+            let (id, id_size) = read_varint(&payload[offset..])?;
+            offset += id_size;
+
+            let data = payload[offset..].to_vec();
+            Some((id, data))
+        } else {
+            // paquete
+            let mut decoder = ZlibDecoder::new(&payload[offset..]);
+            let mut decompressed = Vec::with_capacity(data_length as usize);
+            decoder.read_to_end(&mut decompressed).ok()?;
+
+            let (id, id_size) = read_varint(&decompressed)?;
+            let data= decompressed[id_size..].to_vec();
+
+            Some((id, data))
+        }
+    } else {
+        let (id, id_size) = read_varint(&payload[offset..])?;
+        offset += id_size;
+
+        let data = payload[offset..].to_vec();
+        Some((id, data))
+    }
+}
+
 pub fn inspect_packet(
     buffer: &mut Vec<u8>,
     dir: &Direction,
@@ -23,54 +57,11 @@ pub fn inspect_packet(
 
     let raw_packet = buffer.drain(..total_packet_size).collect::<Vec<u8>>();
 
-    // Decompresion
-    let final_id: i32;
-    let final_data: Vec<u8>;
-
-    let mut offset = len_size;
-
-    if session.compression_threshold >= 0 {
-        let (data_length, data_len_size) = match read_varint(&raw_packet[offset..]) {
-            Some(v) => v,
-            None => return FilterResult::Cancel
-        };
-        offset += data_len_size;
-
-        if data_length == 0 {
-            // data_length es 0 cuando no está comprimido
-            let (id, id_size) = match read_varint(&raw_packet[offset..]) {
-                Some(v) => v,
-                None => return FilterResult::Cancel
-            };
-            offset += id_size;
-
-            final_id = id;
-            final_data = raw_packet[offset..].to_vec()
-        } else {
-            let mut decoder = ZlibDecoder::new(&raw_packet[offset..]);
-            let mut decompressed = Vec::new();
-            if decoder.read_to_end(&mut decompressed).is_err() {
-                return FilterResult::Cancel
-            }
-
-            let (id, id_size) = match read_varint(&decompressed) {
-                Some(v) => v,
-                None => return FilterResult::Cancel
-            };
-
-            final_id = id;
-            final_data = decompressed[id_size..].to_vec()
-        }
-    } else {
-        let (id, id_size) = match read_varint(&raw_packet[offset..]) {
-            Some(v) => v,
-            None => return FilterResult::Cancel
-        };
-        offset += id_size;
-
-        final_id = id;
-        final_data = raw_packet[offset..].to_vec()
-    }
+    let payload = &raw_packet[len_size..];
+    let (final_id, final_data) = match deconstruct_packet(payload, session.compression_threshold) {
+        Some(v) => v,
+        None => return FilterResult::Cancel
+    };
 
     let packet = Packet {
         id: final_id,
