@@ -31,8 +31,26 @@ impl<'a> PacketReader<'a> {
         Some(value)
     }
 
+    pub fn read_bool(&mut self) -> Option<bool> {
+        let (value, size) = read_bool(&self.data[self.offset..])?;
+        self.offset += size;
+        Some(value)
+    }
+
     pub fn read_long(&mut self) -> Option<i64> {
         let (value, size) = read_long(&self.data[self.offset..])?;
+        self.offset += size;
+        Some(value)
+    }
+
+    pub fn read_float(&mut self) -> Option<f32> {
+        let (value, size) = read_float(&self.data[self.offset..])?;
+        self.offset += size;
+        Some(value)
+    }
+
+    pub fn read_double(&mut self) -> Option<f64> {
+        let (value, size) = read_double(&self.data[self.offset..])?;
         self.offset += size;
         Some(value)
     }

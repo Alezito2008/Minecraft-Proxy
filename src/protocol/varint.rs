@@ -96,6 +96,24 @@ pub fn write_string(text: &str, buf: &mut Vec<u8>) {
     buf.extend_from_slice(text.as_bytes());
 }
 
+pub fn read_bool(buf: &[u8]) -> Option<(bool, usize)> {
+    if buf.is_empty() {
+        return None;
+    }
+
+    let value = match buf[0] {
+        0 => false,
+        1 => true,
+        _ => return None
+    };
+
+    Some((value, 1))
+}
+
+pub fn write_bool(value: bool, buf: &mut Vec<u8>) {
+    buf.push(value as u8);
+}
+
 pub fn read_ushort(buf: &[u8]) -> Option<(u16, usize)> {
     if buf.len() < 2 {
         return None;
@@ -119,6 +137,32 @@ pub fn read_long(buf: &[u8]) -> Option<(i64, usize)> {
 
 pub fn write_long(value: i64, buf: &mut Vec<u8>) {
     buf.extend_from_slice(&i64::to_be_bytes(value));
+}
+
+pub fn read_float(buf: &[u8]) -> Option<(f32, usize)> {
+    if buf.len() < 4 {
+        return None;
+    }
+    let bytes: [u8; 4] = buf[..4].try_into().unwrap();
+    let n = f32::from_be_bytes(bytes);
+    Some((n, 4))
+}
+
+pub fn write_float(value: f32, buf: &mut Vec<u8>) {
+    buf.extend_from_slice(&f32::to_be_bytes(value));
+}
+
+pub fn read_double(buf: &[u8]) -> Option<(f64, usize)> {
+    if buf.len() < 8 {
+        return None;
+    }
+    let bytes: [u8; 8] = buf[..8].try_into().unwrap();
+    let n = f64::from_be_bytes(bytes);
+    Some((n, 8))
+}
+
+pub fn write_double(value: f64, buf: &mut Vec<u8>) {
+    buf.extend_from_slice(&f64::to_be_bytes(value));
 }
 
 pub fn read_uuid(buf: &[u8]) -> Option<(u128, usize)> {
