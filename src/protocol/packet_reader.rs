@@ -13,6 +13,10 @@ impl<'a> PacketReader<'a> {
         }
     }
 
+    pub fn add_padding(&mut self, padding: usize) {
+        self.offset += padding;
+    }
+
     pub fn read_varint(&mut self) -> Option<i32> {
         let (value, size) = read_varint(&self.data[self.offset..])?;
         self.offset += size;

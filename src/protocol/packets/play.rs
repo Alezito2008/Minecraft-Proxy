@@ -1,5 +1,6 @@
 use crate::protocol::{PacketReader, Session, ConnectionState};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
+use crate::protocol::types::EntityType;
 use self::packets::*;
 
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Play
@@ -26,10 +27,27 @@ impl PacketHandler for PlayHandler {
         }
     }
 
-    fn handle_s2c(_reader: &mut PacketReader, id: i32, _session: &mut Session) {
+    fn handle_s2c(reader: &mut PacketReader, id: i32, _session: &mut Session) {
         match id {
             StartConfiguration::ID => {
                 println!("Start configuration request");
+            },
+            SpawnEntity::ID => {
+                if let Some(e) = SpawnEntity::decode(reader) {
+                    println!("Spawned entity type: {:?}, ID: {}, x: {}, y: {}, z: {}",
+                        e.entity_type,
+                        e.entity_id,
+                        e.x, e.y, e.z
+                    )
+                }
+            },
+            EntityPositionSync::ID => {
+                if let Some(e) = EntityPositionSync::decode(reader) {
+                    println!("Teleported entity with ID: {} at x: {}, y: {}, z: {}",
+                        e.entity_id,
+                        e.x, e.y, e.z
+                    );
+                }
             }
             _ => {}
         }
@@ -79,20 +97,20 @@ pub mod packets {
         }
     }
 
-    pub struct TeleportEntity {
-        entity_id: i32,
-        x: f64,
-        y: f64,
-        z: f64,
-        vel_x: f64,
-        vel_y: f64,
-        vel_z: f64,
-        yaw: f32,
-        pitch: f32,
-        on_ground: bool
+    pub struct EntityPositionSync {
+        pub entity_id: i32,
+        pub x: f64,
+        pub y: f64,
+        pub z: f64,
+        pub vel_x: f64,
+        pub vel_y: f64,
+        pub vel_z: f64,
+        pub yaw: f32,
+        pub pitch: f32,
+        pub on_ground: bool
     }
 
-    impl MinecraftPacket for TeleportEntity {
+    impl MinecraftPacket for EntityPositionSync {
         const ID: i32 = 0x23;
 
         fn decode(reader: &mut PacketReader) -> Option<Self> where Self: Sized {
@@ -107,6 +125,31 @@ pub mod packets {
                 yaw: reader.read_float()?,
                 pitch: reader.read_float()?,
                 on_ground: reader.read_bool()?
+            })
+        }
+    }
+
+    pub struct SpawnEntity {
+        pub entity_id: i32,
+        pub uuid: u128,
+        pub entity_type: EntityType,
+        pub x: f64,
+        pub y: f64,
+        pub z: f64,
+        // TODO: Completar
+    }
+
+    impl MinecraftPacket for SpawnEntity {
+        const ID: i32 = 0x01;
+
+        fn decode(reader: &mut PacketReader) -> Option<Self> where Self: Sized {
+            Some(Self {
+                entity_id: reader.read_varint()?,
+                uuid: reader.read_uuid()?,
+                entity_type: EntityType::from(reader.read_varint()?),
+                x: reader.read_double()?,
+                y: reader.read_double()?,
+                z: reader.read_double()?
             })
         }
     }

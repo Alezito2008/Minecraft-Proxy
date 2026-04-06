@@ -1,6 +1,7 @@
 mod codec;
 mod varint;
 mod packet_reader;
+mod types;
 mod packets;
 
 use core::fmt;
