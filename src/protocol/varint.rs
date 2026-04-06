@@ -126,6 +126,18 @@ pub fn write_ushort(value: u16, buf: &mut Vec<u8>) {
     buf.extend_from_slice(&u16::to_be_bytes(value));
 }
 
+pub fn read_short(buf: &[u8]) -> Option<(i16, usize)> {
+    if buf.len() < 2 {
+        return None;
+    }
+    let n = i16::from_be_bytes([buf[0], buf[1]]);
+    Some((n, 2))
+}
+
+pub fn write_short(value: i16, buf: &mut Vec<u8>) {
+    buf.extend_from_slice(&i16::to_be_bytes(value));
+}
+
 pub fn read_long(buf: &[u8]) -> Option<(i64, usize)> {
     if buf.len() < 8 {
         return None;

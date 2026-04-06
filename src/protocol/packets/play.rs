@@ -31,7 +31,7 @@ impl PacketHandler for PlayHandler {
         match id {
             StartConfiguration::ID => {
                 println!("Start configuration request");
-            },
+            }
             SpawnEntity::ID => {
                 if let Some(e) = SpawnEntity::decode(reader) {
                     println!("Spawned entity type: {:?}, ID: {}, x: {}, y: {}, z: {}",
@@ -40,13 +40,21 @@ impl PacketHandler for PlayHandler {
                         e.x, e.y, e.z
                     )
                 }
-            },
+            }
             EntityPositionSync::ID => {
                 if let Some(e) = EntityPositionSync::decode(reader) {
                     println!("Teleported entity with ID: {} at x: {}, y: {}, z: {}",
                         e.entity_id,
                         e.x, e.y, e.z
                     );
+                }
+            }
+            UpdateEntityPosition::ID => {
+                if let Some(e) = UpdateEntityPosition::decode(reader) {
+                    println!("Update entity position for ID: {}: dx: {}, dy: {}, dz: {}",
+                        e.entity_id,
+                        e.dx, e.dy, e.dz
+                    )
                 }
             }
             _ => {}
@@ -150,6 +158,28 @@ pub mod packets {
                 x: reader.read_double()?,
                 y: reader.read_double()?,
                 z: reader.read_double()?
+            })
+        }
+    }
+
+    pub struct UpdateEntityPosition {
+        pub entity_id: i32,
+        pub dx: i16,
+        pub dy: i16,
+        pub dz: i16,
+        pub on_ground: bool
+    }
+
+    impl MinecraftPacket for UpdateEntityPosition {
+        const ID: i32 = 0x33;
+
+        fn decode(reader: &mut PacketReader) -> Option<Self> where Self: Sized {
+            Some(Self {
+                entity_id: reader.read_varint()?,
+                dx: reader.read_short()?,
+                dy: reader.read_short()?,
+                dz: reader.read_short()?,
+                on_ground: reader.read_bool()?
             })
         }
     }
