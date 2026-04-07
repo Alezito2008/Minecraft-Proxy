@@ -33,5 +33,7 @@ pub trait PacketListener {
         on_spawn_entity: SpawnEntity,
         on_entity_position_sync: EntityPositionSync,
         on_update_entity_position: UpdateEntityPosition,
+        on_acknowledge_finish_configuration: AcknowledgeFinishConfiguration,
+        on_finish_configuration: FinishConfiguration,
     );
 }
