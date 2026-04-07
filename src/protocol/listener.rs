@@ -26,5 +26,12 @@ pub trait PacketListener {
         on_ping_packet_request: PingPacket,
         on_ping_packet_response: PingPacket,
         on_status_response: StatusResponse,
+        on_chat_command: ChatCommand,
+        on_command_suggestion_request: CommandSuggestionRequest,
+        on_acknowledge_configuration: AcknowledgeConfiguration,
+        on_start_configuration: StartConfiguration,
+        on_spawn_entity: SpawnEntity,
+        on_entity_position_sync: EntityPositionSync,
+        on_update_entity_position: UpdateEntityPosition,
     );
 }
