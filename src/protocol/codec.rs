@@ -1,3 +1,4 @@
+use crate::protocol::listener::PacketListener;
 use crate::protocol::{Direction, FilterResult, PacketReader};
 use crate::protocol::packets::*;
 use crate::protocol::{read_varint};
@@ -39,10 +40,11 @@ pub fn deconstruct_packet(payload: &[u8], threshold: i32) -> Option<(i32, Vec<u8
     }
 }
 
-pub fn inspect_packet(
+pub fn inspect_packet<L: PacketListener>(
     buffer: &mut Vec<u8>,
     dir: &Direction,
-    session: &mut Session
+    session: &mut Session,
+    listener: &mut L
 ) -> FilterResult {
     // Leer largo total del paquete
     let (total_length, len_size) = match read_varint(&buffer) {

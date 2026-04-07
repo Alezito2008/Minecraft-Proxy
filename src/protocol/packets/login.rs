@@ -1,3 +1,4 @@
+use crate::protocol::listener::{PacketAction, PacketListener};
 use crate::protocol::{ConnectionState, PacketReader, Session};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
 use self::packets::*;
@@ -5,46 +6,66 @@ use self::packets::*;
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Login
 pub struct LoginHandler;
 impl PacketHandler for LoginHandler {
-    fn handle_c2s(reader: &mut PacketReader, id: i32, session: &mut Session) {
+    fn handle_c2s<L: PacketListener>(
+            reader: &mut PacketReader,
+            id: i32,
+            session: &mut Session,
+            listener: &mut L
+        ) -> PacketAction {
         match id {
             LoginStart::ID => {
-                if let Some(login_start) = LoginStart::decode(reader) {
+                if let Some(mut login_start) = LoginStart::decode(reader) {
                     println!("Login start: Name: {}, UUID: {}", login_start.name, login_start.uuid);
+                    return listener.on_login_start(&mut login_start);
                 }
             },
             EncryptionResponse::ID => {
                 println!("Sent encryption response packet");
+                return listener.on_encription_response(&mut EncryptionResponse)
             },
             LoginAcknowledged::ID => {
                 println!("Login acknowledged");
                 session.state = ConnectionState::Configuration;
+                return listener.on_login_acknowledged(&mut LoginAcknowledged)
             }
             _ => {}
         }
+        PacketAction::Allow
     }
 
-    fn handle_s2c(reader: &mut PacketReader, id: i32, session: &mut Session) {
+    fn handle_s2c<L: PacketListener>(
+            reader: &mut PacketReader,
+            id: i32,
+            session: &mut Session,
+            listener: &mut L
+        ) -> PacketAction {
+        
         match id {
             EncryptionRequest::ID => {
                 println!("Received encryption request packet");
+                return listener.on_encryption_request(&mut EncryptionRequest);
             },
             SetCompression::ID => {
-                if let Some(set_compression) = SetCompression::decode(reader) {
+                if let Some(mut set_compression) = SetCompression::decode(reader) {
                     println!("Set compression threshold: {}", set_compression.threshold);
                     session.compression_threshold = set_compression.threshold;
+                    return listener.on_set_compression(&mut set_compression);
                 }
             }
             LoginSuccess::ID => {
-                if let Some(login_success) = LoginSuccess::decode(reader) {
+                if let Some(mut login_success) = LoginSuccess::decode(reader) {
                     println!("Login success: UUID: {}, Username: {}", login_success.uuid, login_success.username);
+                    return listener.on_login_success(&mut login_success)
                 }
             }
             _ => {}
         }
+
+        PacketAction::Allow
     }
 }
 
-mod packets {
+pub mod packets {
     use super::*;
     use crate::protocol::varint::*;
     

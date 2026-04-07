@@ -4,13 +4,19 @@ mod status;
 mod configuration;
 mod play;
 
+pub use handshaking::packets::*;
+pub use status::packets::*;
+pub use login::packets::*;
+pub use configuration::packets::*;
+pub use play::packets::*;
+
 pub use handshaking::HandshakeHandler;
 pub use status::StatusHandler;
 pub use login::LoginHandler;
 pub use configuration::ConfigurationHandler;
 pub use play::PlayHandler;
 
-use crate::protocol::PacketReader;
+use crate::protocol::{PacketReader, listener::{PacketAction, PacketListener}};
 
 pub struct Session {
     pub state: ConnectionState,
@@ -63,6 +69,17 @@ pub struct Packet {
 }
 
 pub trait PacketHandler {
-    fn handle_c2s(_reader: &mut PacketReader, _id: i32, _session: &mut Session) {}
-    fn handle_s2c(_reader: &mut PacketReader, _id: i32, _session: &mut Session) {}
+    fn handle_c2s<L: PacketListener>(
+        _reader: &mut PacketReader,
+        _id: i32,
+        _session: &mut Session,
+        _listener: &mut L
+    ) -> PacketAction { PacketAction::Allow }
+
+    fn handle_s2c<L: PacketListener>(
+        _reader: &mut PacketReader,
+        _id: i32,
+        _session: &mut Session,
+        _listener: &mut L
+    ) -> PacketAction { PacketAction::Allow }
 }

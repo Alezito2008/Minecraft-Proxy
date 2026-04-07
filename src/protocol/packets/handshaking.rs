@@ -1,3 +1,4 @@
+use crate::protocol::listener::{PacketAction, PacketListener};
 use crate::protocol::{ConnectionState, PacketReader, Session};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
 use self::packets::*;
@@ -5,20 +6,23 @@ use self::packets::*;
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Handshaking
 pub struct HandshakeHandler;
 impl PacketHandler for HandshakeHandler {
-    fn handle_c2s(
+    fn handle_c2s<L: PacketListener>(
         reader: &mut PacketReader,
         id: i32,
-        session: &mut Session
-    ) {
+        session: &mut Session,
+        listener: &mut L
+    ) -> PacketAction {
         match id {
             Handshake::ID => {
-                if let Some(handshake) = Handshake::decode(reader) {
+                if let Some(mut handshake) = Handshake::decode(reader) {
                     println!("Handshake: Host: {}, Protocol: {}, Port: {}, Intent: {:?}", handshake.server_address, handshake.protocol_version, handshake.server_port, handshake.next_state);
                     session.state = handshake.next_state;
+                    return listener.on_handshake(&mut handshake)
                 }
             },
             _ => {}
         }
+        PacketAction::Allow
     }
 }
 
