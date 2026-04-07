@@ -22,5 +22,9 @@ pub trait PacketListener {
         on_encryption_request: EncryptionRequest,
         on_set_compression: SetCompression,
         on_login_success: LoginSuccess,
+        on_status_request: StatusRequest,
+        on_ping_packet_request: PingPacket,
+        on_ping_packet_response: PingPacket,
+        on_status_response: StatusResponse,
     );
 }
