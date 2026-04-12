@@ -2,8 +2,9 @@ mod codec;
 mod varint;
 mod packet_reader;
 mod types;
-mod packets;
-mod listener;
+
+pub mod packets;
+pub mod listener;
 
 use core::fmt;
 

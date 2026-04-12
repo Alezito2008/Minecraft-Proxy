@@ -1,4 +1,4 @@
-use crate::protocol::listener::PacketListener;
+use crate::protocol::listener::{PacketListener, PacketAction};
 use crate::protocol::{Direction, FilterResult, PacketReader};
 use crate::protocol::packets::*;
 use crate::protocol::{read_varint};
@@ -73,24 +73,27 @@ pub fn inspect_packet<L: PacketListener>(
     let mut reader = PacketReader::new(&packet.data);
     let state = &mut session.state;
 
-    match dir {
+    let action = match dir {
         Direction::ClientToServer => match state {
-            ConnectionState::Handshaking    => HandshakeHandler::handle_c2s(&mut reader, packet.id, session),
-            ConnectionState::Status         => StatusHandler::handle_c2s(&mut reader, packet.id, session),
-            ConnectionState::Login          => LoginHandler::handle_c2s(&mut reader, packet.id, session),
-            ConnectionState::Configuration  => ConfigurationHandler::handle_c2s(&mut reader, packet.id, session),
-            ConnectionState::Play           => PlayHandler::handle_c2s(&mut reader, packet.id, session),
-            _ => {}
+            ConnectionState::Handshaking    => HandshakeHandler::handle_c2s(&mut reader, packet.id, session, listener),
+            ConnectionState::Status         => StatusHandler::handle_c2s(&mut reader, packet.id, session, listener),
+            ConnectionState::Login          => LoginHandler::handle_c2s(&mut reader, packet.id, session, listener),
+            ConnectionState::Configuration  => ConfigurationHandler::handle_c2s(&mut reader, packet.id, session, listener),
+            ConnectionState::Play           => PlayHandler::handle_c2s(&mut reader, packet.id, session, listener),
+            _ => PacketAction::Allow
         }
         Direction::ServerToClient => match state {
-            ConnectionState::Handshaking    => HandshakeHandler::handle_s2c(&mut reader, packet.id, session),
-            ConnectionState::Status         => StatusHandler::handle_s2c(&mut reader, packet.id, session),
-            ConnectionState::Login          => LoginHandler::handle_s2c(&mut reader, packet.id, session),
-            ConnectionState::Configuration  => ConfigurationHandler::handle_s2c(&mut reader, packet.id, session),
-            ConnectionState::Play           => PlayHandler::handle_s2c(&mut reader, packet.id, session),
-            _ => {}
+            ConnectionState::Handshaking    => HandshakeHandler::handle_s2c(&mut reader, packet.id, session, listener),
+            ConnectionState::Status         => StatusHandler::handle_s2c(&mut reader, packet.id, session, listener),
+            ConnectionState::Login          => LoginHandler::handle_s2c(&mut reader, packet.id, session, listener),
+            ConnectionState::Configuration  => ConfigurationHandler::handle_s2c(&mut reader, packet.id, session, listener),
+            ConnectionState::Play           => PlayHandler::handle_s2c(&mut reader, packet.id, session, listener),
+            _ => PacketAction::Allow
         }
-    }
+    };
 
-    FilterResult::Send(raw_packet)
+    match action {
+        PacketAction::Allow => FilterResult::Send(raw_packet),
+        PacketAction::Cancel => FilterResult::Cancel
+    }
 }
