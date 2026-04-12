@@ -83,3 +83,34 @@ pub trait PacketHandler {
         _listener: &mut L
     ) -> PacketAction { PacketAction::Allow }
 }
+
+#[macro_export]
+macro_rules! handle_packet {
+    ($t:ty, $l:ident) => {
+        {
+            if let Some(mut p) = <$t>::decode(reader) {
+                return listener.$l(&mut p)
+            }
+        }
+    };
+    ($t:ty, $l:ident, $e:expr) => {
+        {
+            if let Some(mut p) = $t::decode(reader) {
+                $e;
+                return listener.$l(&mut p)
+            }
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! handle_packets {
+    ($($t:ty, $l:ident$(, $e:expr)?);+$(;)?) => {
+        match id {
+            $(
+                <$t>::ID => handle_packet!($t, $l $(, $e)?),
+            )+
+            _ => PacketAction::Allow
+        }
+    };
+}
