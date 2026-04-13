@@ -85,32 +85,39 @@ pub trait PacketHandler {
 }
 
 #[macro_export]
-macro_rules! handle_packet {
-    ($t:ty, $l:ident) => {
+macro_rules! handle_packets {
+    ($id:ident, $reader:ident, $listener:ident; $($packet_type:ty => $packet_listener:ident);+ $(;)?) => {
         {
-            if let Some(mut p) = <$t>::decode(reader) {
-                return listener.$l(&mut p)
+            match $id {
+                $(
+                    <$packet_type>::ID => {
+                        if let Some(mut p) = <$packet_type>::decode($reader) {
+                            return $listener.$packet_listener(&mut p)
+                        }
+                    }
+                )+
+                _ => ()
             }
+
+            PacketAction::Allow
         }
     };
-    ($t:ty, $l:ident, $e:expr) => {
-        {
-            if let Some(mut p) = $t::decode(reader) {
-                $e;
-                return listener.$l(&mut p)
-            }
-        }
-    }
-}
 
-#[macro_export]
-macro_rules! handle_packets {
-    ($($t:ty, $l:ident$(, $e:expr)?);+$(;)?) => {
-        match id {
-            $(
-                <$t>::ID => handle_packet!($t, $l $(, $e)?),
-            )+
-            _ => PacketAction::Allow
+    ($id:ident, $reader:ident, $listener:ident; $($packet_type:ty => $packet_listener:ident, $p_name:ident, $e:expr);+ $(;)?) => {
+        {
+            match $id {
+                $(
+                    <$packet_type>::ID => {
+                        if let Some(mut $p_name) = <$packet_type>::decode($reader) {
+                            $e;
+                            return $listener.$packet_listener(&mut $p_name)
+                        }
+                    }
+                )+
+                _ => ()
+            }
+
+            PacketAction::Allow
         }
     };
 }

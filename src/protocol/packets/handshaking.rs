@@ -1,3 +1,4 @@
+use crate::{handle_packets};
 use crate::protocol::listener::{PacketAction, PacketListener};
 use crate::protocol::{ConnectionState, PacketReader, Session};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
@@ -12,17 +13,9 @@ impl PacketHandler for HandshakeHandler {
         session: &mut Session,
         listener: &mut L
     ) -> PacketAction {
-        match id {
-            Handshake::ID => {
-                if let Some(mut handshake) = Handshake::decode(reader) {
-                    println!("Handshake: Host: {}, Protocol: {}, Port: {}, Intent: {:?}", handshake.server_address, handshake.protocol_version, handshake.server_port, handshake.next_state);
-                    session.state = handshake.next_state;
-                    return listener.on_handshake(&mut handshake)
-                }
-            },
-            _ => {}
-        }
-        PacketAction::Allow
+        handle_packets!(id, reader, listener;
+            Handshake => on_handshake, p, session.state = p.next_state;
+        )
     }
 }
 
