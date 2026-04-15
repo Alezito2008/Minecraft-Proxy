@@ -8,7 +8,8 @@ pub enum PacketAction {
 macro_rules! add_listeners {
     ($($name:ident: $packet_type:ty),+$(,)?) => {
         $(
-            fn $name (&mut self, _p: &mut $packet_type) -> PacketAction { PacketAction::Allow }
+            #[allow(unused_variables)]
+            fn $name (&mut self, packet: &mut $packet_type) -> PacketAction { PacketAction::Allow }
         )+
     };
 }

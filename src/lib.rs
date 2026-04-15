@@ -3,8 +3,7 @@ use std::sync::{Arc, Mutex};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, AsyncRead, AsyncWrite};
 use tokio::net::{TcpListener, TcpStream};
 
-mod utils;
-mod protocol;
+pub mod protocol;
 
 use protocol::{Direction, FilterResult, inspect_packet};
 use crate::protocol::listener::{PacketListener};
@@ -18,7 +17,7 @@ pub struct MinecraftProxy<L: PacketListener> {
 }
 
 impl<L: PacketListener + Send + 'static> MinecraftProxy<L> {
-    fn new(proxy_port: u16, remote_addr: &str, packet_listener: L) -> Self {
+    pub fn new(proxy_port: u16, remote_addr: &str, packet_listener: L) -> Self {
         Self {
             proxy_port: proxy_port,
             remote_addr: remote_addr.to_string(),
@@ -26,7 +25,7 @@ impl<L: PacketListener + Send + 'static> MinecraftProxy<L> {
         }
     }
 
-    async fn run(&self) -> std::io::Result<()> {
+    pub async fn run(&self) -> std::io::Result<()> {
         let addr = format!("0.0.0.0:{}", self.proxy_port);
         let tcp_listener = TcpListener::bind(&addr).await?;
         println!("Proxy listening on {addr}");
@@ -121,31 +120,3 @@ impl<L: PacketListener + Send + 'static> MinecraftProxy<L> {
     }
 }
 
-
-struct Prueba;
-impl Prueba {
-    fn new() -> Self {
-        Self
-    }
-}
-
-impl PacketListener for Prueba {
-    fn on_chat_command(&mut self,command_packet: &mut protocol::packets::ChatCommand) -> protocol::listener::PacketAction {
-        println!("chat command detected: {}", command_packet.command);
-        protocol::listener::PacketAction::Allow
-    }
-    
-    fn on_handshake(&mut self, p: &mut protocol::packets::Handshake) -> protocol::listener::PacketAction {
-        println!("Handshake: {}", p.server_address);
-        protocol::listener::PacketAction::Allow
-    }
-}
-
-#[tokio::main]
-async fn main() -> std::io::Result<()> {
-    let test = Prueba::new();
-
-    let proxy = MinecraftProxy::new(1243, "127.0.0.1:25565", test);
-    
-    proxy.run().await
-}

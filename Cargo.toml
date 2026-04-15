@@ -1,5 +1,5 @@
 [package]
-name = "McProxy"
+name = "mc_proxy"
 version = "0.1.0"
 edition = "2024"
 
