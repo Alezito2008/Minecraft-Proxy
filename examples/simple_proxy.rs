@@ -26,5 +26,5 @@ async fn main() -> std::io::Result<()> {
 
     let proxy = MinecraftProxy::new(1243, "127.0.0.1:25565", test);
     
-    proxy.run().await
+    proxy.listen().await
 }

@@ -25,7 +25,7 @@ impl<L: PacketListener + Send + 'static> MinecraftProxy<L> {
         }
     }
 
-    pub async fn run(&self) -> std::io::Result<()> {
+    pub async fn listen(&self) -> std::io::Result<()> {
         let addr = format!("0.0.0.0:{}", self.proxy_port);
         let tcp_listener = TcpListener::bind(&addr).await?;
         println!("Proxy listening on {addr}");
