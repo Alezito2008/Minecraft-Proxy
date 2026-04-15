@@ -93,6 +93,7 @@ macro_rules! handle_packets {
                     <$packet_type>::ID => {
                         if let Some(mut _p) = <$packet_type>::decode($reader) {
                             $(
+                                #[allow(unused)]
                                 let $p_name = &mut _p;
                                 $e;
                             )?
@@ -101,7 +102,7 @@ macro_rules! handle_packets {
                     }
                 )+
                 _ => ()
-            }
+            };
 
             PacketAction::Allow
         }
@@ -114,28 +115,31 @@ macro_rules! impl_packet_handler {
         $(c2s => { $($c2s_packet_type:ty => $c2s_packet_listener:ident $(, $c2s_e:expr)?)* })? $(,)?
         $(s2c => { $($s2c_packet_type:ty => $s2c_packet_listener:ident $(, $s2c_e:expr)?)* })?
     ) => {
+        pub struct $name;
         impl PacketHandler for $name {
             $(
+                #[allow(unused)]
                 fn handle_c2s<L: PacketListener>(
                     reader: &mut PacketReader,
                     id: i32,
                     $session: &mut Session,
                     listener: &mut L
                 ) -> PacketAction {
-                    handle_packets!(id, reader, listener, $session;
+                    crate::handle_packets!(id, reader, listener, $session;
                         $($c2s_packet_type => $c2s_packet_listener $(, $p_name, $c2s_e)?;)*
                     )
                 }
             )?
             $(
+                #[allow(unused)]
                 fn handle_s2c<L: PacketListener>(
                     reader: &mut PacketReader,
                     id: i32,
                     $session: &mut Session,
                     listener: &mut L
                 ) -> PacketAction {
-                    handle_packets!(id, reader, listener, session;
-                        $($s2c_packet_type => $s2c_packet_listener $(, $s2c_p_name, $s2c_e)?;)*
+                    crate::handle_packets!(id, reader, listener, session;
+                        $($s2c_packet_type => $s2c_packet_listener $(, $p_name, $s2c_e)?;)*
                     )
                 }
             )?

@@ -1,3 +1,4 @@
+use crate::impl_packet_handler;
 use crate::protocol::listener::{PacketAction, PacketListener};
 use crate::protocol::{PacketReader, Session, ConnectionState};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
@@ -5,85 +6,19 @@ use crate::protocol::types::EntityType;
 use self::packets::*;
 
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Play
-pub struct PlayHandler;
-impl PacketHandler for PlayHandler {
-    fn handle_c2s<L: PacketListener>(
-            reader: &mut PacketReader,
-            id: i32,
-            session: &mut Session,
-            listener: &mut L
-        ) -> PacketAction {
-        match id {
-            ChatCommand::ID => {
-                if let Some(mut chat_command) = ChatCommand::decode(reader) {
-                    println!("Sent chat command: {}", chat_command.command);
-                    return listener.on_chat_command(&mut chat_command);
-                }
-            }
-            CommandSuggestionRequest::ID => {
-                println!("cmd suggestion");
-                if let Some(mut command_suggestion) = CommandSuggestionRequest::decode(reader) {
-                    println!("Command suggestion: ID: {}, Text: {}", command_suggestion.transaction_id, command_suggestion.text);
-                    return listener.on_command_suggestion_request(&mut command_suggestion);
-                }
-            }
-            AcknowledgeConfiguration::ID => {
-                println!("Acknowledge start configuration");
-                session.state = ConnectionState::Configuration;
-                return listener.on_acknowledge_configuration(&mut AcknowledgeConfiguration);
-            }
-            _ => {}
-        }
-
-        PacketAction::Allow
+impl_packet_handler!(PlayHandler, packet, session,
+    c2s => {
+        ChatCommand => on_chat_command
+        CommandSuggestionRequest => on_command_suggestion_request
+        AcknowledgeConfiguration => on_acknowledge_configuration, { session.state = ConnectionState::Configuration }
     }
-
-
-    fn handle_s2c<L: PacketListener>(
-            reader: &mut PacketReader,
-            id: i32,
-            _session: &mut Session,
-            listener: &mut L
-        ) -> PacketAction {
-        match id {
-            StartConfiguration::ID => {
-                println!("Start configuration request");
-                return listener.on_start_configuration(&mut StartConfiguration);
-            }
-            SpawnEntity::ID => {
-                if let Some(mut e) = SpawnEntity::decode(reader) {
-                    println!("Spawned entity type: {:?}, ID: {}, x: {}, y: {}, z: {}",
-                        e.entity_type,
-                        e.entity_id,
-                        e.x, e.y, e.z
-                    );
-                    return listener.on_spawn_entity(&mut e);
-                }
-            }
-            EntityPositionSync::ID => {
-                if let Some(mut e) = EntityPositionSync::decode(reader) {
-                    println!("Teleported entity with ID: {} at x: {}, y: {}, z: {}",
-                        e.entity_id,
-                        e.x, e.y, e.z
-                    );
-                    return listener.on_entity_position_sync(&mut e);
-                }
-            }
-            UpdateEntityPosition::ID => {
-                if let Some(mut e) = UpdateEntityPosition::decode(reader) {
-                    println!("Update entity position for ID: {}: dx: {}, dy: {}, dz: {}",
-                        e.entity_id,
-                        e.dx, e.dy, e.dz
-                    );
-                    return listener.on_update_entity_position(&mut e);
-                }
-            }
-            _ => {}
-        }
-
-        PacketAction::Allow
+    s2c => {
+        StartConfiguration => on_start_configuration
+        SpawnEntity => on_spawn_entity
+        EntityPositionSync => on_entity_position_sync
+        UpdateEntityPosition => on_update_entity_position
     }
-}
+);
 
 pub mod packets {
     use super::*;
