@@ -1,4 +1,4 @@
-use crate::{handle_packets};
+use crate::{handle_packets, impl_packet_handler};
 use crate::protocol::listener::{PacketAction, PacketListener};
 use crate::protocol::{ConnectionState, PacketReader, Session};
 use crate::protocol::packets::{MinecraftPacket, PacketHandler};
@@ -6,18 +6,24 @@ use self::packets::*;
 
 // https://minecraft.wiki/w/Java_Edition_protocol/Packets#Handshaking
 pub struct HandshakeHandler;
-impl PacketHandler for HandshakeHandler {
-    fn handle_c2s<L: PacketListener>(
-        reader: &mut PacketReader,
-        id: i32,
-        session: &mut Session,
-        listener: &mut L
-    ) -> PacketAction {
-        handle_packets!(id, reader, listener;
-            Handshake => on_handshake, p, session.state = p.next_state;
-        )
+// impl PacketHandler for HandshakeHandler {
+//     fn handle_c2s<L: PacketListener>(
+//         reader: &mut PacketReader,
+//         id: i32,
+//         session: &mut Session,
+//         listener: &mut L
+//     ) -> PacketAction {
+//         handle_packets!(id, reader, listener;
+//             Handshake => on_handshake, p, session.state = p.next_state;
+//         )
+//     }
+// }
+
+impl_packet_handler!(HandshakeHandler, packet, session,
+    c2s => {
+        Handshake => on_handshake, { session.state = packet.next_state }
     }
-}
+);
 
 pub mod packets {
     use super::*;

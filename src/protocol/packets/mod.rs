@@ -86,13 +86,17 @@ pub trait PacketHandler {
 
 #[macro_export]
 macro_rules! handle_packets {
-    ($id:ident, $reader:ident, $listener:ident; $($packet_type:ty => $packet_listener:ident);+ $(;)?) => {
+    ($id:ident, $reader:ident, $listener:ident, $session:ident; $($packet_type:ty => $packet_listener:ident $(, $p_name:ident, $e:expr)?);+ $(;)?) => {
         {
             match $id {
                 $(
                     <$packet_type>::ID => {
-                        if let Some(mut p) = <$packet_type>::decode($reader) {
-                            return $listener.$packet_listener(&mut p)
+                        if let Some(mut _p) = <$packet_type>::decode($reader) {
+                            $(
+                                let $p_name = &mut _p;
+                                $e;
+                            )?
+                            return $listener.$packet_listener(&mut _p)
                         }
                     }
                 )+
@@ -102,22 +106,39 @@ macro_rules! handle_packets {
             PacketAction::Allow
         }
     };
+}
 
-    ($id:ident, $reader:ident, $listener:ident; $($packet_type:ty => $packet_listener:ident, $p_name:ident, $e:expr);+ $(;)?) => {
-        {
-            match $id {
-                $(
-                    <$packet_type>::ID => {
-                        if let Some(mut $p_name) = <$packet_type>::decode($reader) {
-                            $e;
-                            return $listener.$packet_listener(&mut $p_name)
-                        }
-                    }
-                )+
-                _ => ()
-            }
-
-            PacketAction::Allow
+#[macro_export]
+macro_rules! impl_packet_handler {
+    ($name:ident, $p_name:ident, $session:ident,
+        $(c2s => { $($c2s_packet_type:ty => $c2s_packet_listener:ident $(, $c2s_e:expr)?)* })? $(,)?
+        $(s2c => { $($s2c_packet_type:ty => $s2c_packet_listener:ident $(, $s2c_e:expr)?)* })?
+    ) => {
+        impl PacketHandler for $name {
+            $(
+                fn handle_c2s<L: PacketListener>(
+                    reader: &mut PacketReader,
+                    id: i32,
+                    $session: &mut Session,
+                    listener: &mut L
+                ) -> PacketAction {
+                    handle_packets!(id, reader, listener, $session;
+                        $($c2s_packet_type => $c2s_packet_listener $(, $p_name, $c2s_e)?;)*
+                    )
+                }
+            )?
+            $(
+                fn handle_s2c<L: PacketListener>(
+                    reader: &mut PacketReader,
+                    id: i32,
+                    $session: &mut Session,
+                    listener: &mut L
+                ) -> PacketAction {
+                    handle_packets!(id, reader, listener, session;
+                        $($s2c_packet_type => $s2c_packet_listener $(, $s2c_p_name, $s2c_e)?;)*
+                    )
+                }
+            )?
         }
     };
 }

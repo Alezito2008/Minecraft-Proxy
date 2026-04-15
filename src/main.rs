@@ -134,13 +134,17 @@ impl PacketListener for Prueba {
         println!("chat command detected: {}", command_packet.command);
         protocol::listener::PacketAction::Allow
     }
+    
+    fn on_handshake(&mut self, p: &mut protocol::packets::Handshake) -> protocol::listener::PacketAction {
+        println!("Handshake: {}", p.server_address);
+        protocol::listener::PacketAction::Allow
+    }
 }
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let test = Prueba::new();
 
-    // Creás e iniciás el proxy
     let proxy = MinecraftProxy::new(1243, "127.0.0.1:25565", test);
     
     proxy.run().await
